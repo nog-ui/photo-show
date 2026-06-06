@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>光影星河 · 摄影展</title>
+<meta name="description" content="穿越星河，翻阅光影记忆">
+<meta property="og:title" content="光影星河 · 摄影展">
+<meta property="og:description" content="穿越星河，翻阅光影记忆">
+<meta property="og:type" content="website">
+<meta itemprop="name" content="光影星河 · 摄影展">
+<meta itemprop="description" content="穿越星河，翻阅光影记忆">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root { --bg:#020210; --text:#d0cce8; --text-dim:#7060a0; --accent:#7b6ec8; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:#020210;overflow:hidden;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+    touch-action:pan-x pan-y pinch-zoom;user-select:none;-webkit-user-select:none;
+    height:100dvh;width:100vw;position:fixed;
+  }
+  canvas{display:block}
+
+  .title-overlay{
+    position:fixed;top:max(20px,env(safe-area-inset-top,20px));
+    left:50%;transform:translateX(-50%);z-index:10;
+    text-align:center;pointer-events:none;transition:opacity 1s ease;
+  }
+  .title-overlay h1{
+    font-size:20px;font-weight:200;letter-spacing:10px;color:var(--text);
+    text-shadow:0 0 60px rgba(255,180,60,0.4),0 0 120px rgba(255,140,20,0.2),0 0 200px rgba(200,100,0,0.12);
+  }
+  .title-overlay .sub{font-size:10px;color:var(--text-dim);letter-spacing:6px;margin-top:10px}
+
+  .hint{
+    position:fixed;bottom:max(32px,env(safe-area-inset-bottom,32px));
+    left:50%;transform:translateX(-50%);z-index:10;
+    font-size:11px;color:var(--text-dim);letter-spacing:3px;
+    pointer-events:none;transition:opacity 1.5s ease;
+  }
+  .gesture-hints{
+    position:fixed;bottom:max(70px,calc(env(safe-area-inset-bottom,32px)+38px));
+    left:50%;transform:translateX(-50%);z-index:10;
+    display:flex;gap:18px;pointer-events:none;
+    transition:opacity 1.5s ease;opacity:0.6;
+  }
+  .gesture-hints .gh-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .gesture-hints .gh-icon{
+    width:30px;height:30px;border-radius:50%;
+    border:1px solid rgba(255,160,40,0.3);background:rgba(255,160,40,0.06);
+    display:flex;align-items:center;justify-content:center;font-size:13px;
+  }
+  .gesture-hints .gh-label{font-size:9px;color:var(--text-dim);letter-spacing:1px}
+
+  .loading{
+    position:fixed;inset:0;z-index:100;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:#020210;transition:opacity 0.6s ease;pointer-events:all;
+  }
+  .loading.hidden{opacity:0;pointer-events:none}
+  .loading-ring{
+    width:48px;height:48px;
+    border:2px solid rgba(255,160,40,0.15);border-top-color:#ff9922;border-radius:50%;
+    animation:spin 1s linear infinite;
+  }
+  .loading-text{margin-top:22px;font-size:13px;color:var(--text-dim);letter-spacing:4px}
+  .loading-bar-wrap{width:220px;height:1.5px;margin-top:18px;background:rgba(255,160,40,0.08);border-radius:1px;overflow:hidden}
+  .loading-bar-fill{height:100%;background:#ff9922;border-radius:1px;width:0%;transition:width 0.3s ease}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .lightbox{
+    position:fixed;inset:0;z-index:200;background:rgba(2,2,16,0.97);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    opacity:0;transition:opacity 0.35s ease;
+    -webkit-backdrop-filter:blur(40px);backdrop-filter:blur(40px);pointer-events:all;
+  }
+  .lightbox.open{display:flex;opacity:1}
+  .lightbox-img-wrap{position:relative;max-width:94vw;max-height:78dvh;display:flex;align-items:center;justify-content:center}
+  .lightbox-img-wrap img{
+    max-width:100%;max-height:78dvh;object-fit:contain;border-radius:4px;
+    box-shadow:0 8px 60px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04);
+    user-select:none;-webkit-user-drag:none;transition:opacity 0.3s ease;
+  }
+  .lb-close{
+    position:absolute;top:max(12px,env(safe-area-inset-top,12px));right:12px;z-index:10;
+    width:36px;height:36px;border:1px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.03);color:#fff;font-size:18px;
+    border-radius:50%;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;line-height:1;transition:background 0.2s;
+  }
+  .lb-close:active{background:rgba(255,255,255,0.18)}
+  .lb-counter{
+    position:absolute;bottom:max(18px,env(safe-area-inset-bottom,18px));
+    left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-dim);letter-spacing:3px;
+  }
+  .lb-nav{
+    position:absolute;top:50%;transform:translateY(-50%);z-index:10;
+    width:38px;height:38px;border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.03);color:#fff;font-size:15px;
+    border-radius:50%;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;transition:background 0.2s;
+  }
+  .lb-nav:active{background:rgba(255,255,255,0.15)}
+  .lb-prev{left:8px}.lb-next{right:8px}
+
+  .photo-tooltip{
+    position:fixed;z-index:50;background:rgba(4,2,18,0.97);
+    border:1px solid rgba(255,160,40,0.3);border-radius:12px;padding:14px 18px;
+    color:#d0cce8;font-size:13px;pointer-events:none;opacity:0;transform:translateY(6px);
+    transition:opacity 0.22s ease,transform 0.22s ease;
+    max-width:230px;min-width:150px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.7),0 0 0 1px rgba(255,160,40,0.05) inset;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  }
+  .photo-tooltip.visible{opacity:1;transform:translateY(0);pointer-events:all}
+  .photo-tooltip .tt-title{font-size:15px;font-weight:500;letter-spacing:1px;color:#e8e4f8;margin-bottom:8px}
+  .photo-tooltip .tt-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:#b89868;letter-spacing:0.5px}
+  .photo-tooltip .tt-row .tt-icon{width:14px;text-align:center;flex-shrink:0;opacity:0.5}
+  .photo-tooltip .tt-divider{height:1px;background:rgba(255,160,40,0.12);margin:8px 0}
+  .photo-tooltip .tt-btn{
+    display:block;width:100%;margin-top:10px;padding:8px 0;
+    background:rgba(255,160,40,0.1);border:1px solid rgba(255,160,40,0.3);
+    border-radius:8px;color:#e0a840;font-size:12px;letter-spacing:2px;
+    text-align:center;cursor:pointer;transition:background 0.2s;
+    pointer-events:all;font-family:inherit;
+  }
+  .photo-tooltip .tt-btn:active{background:rgba(255,160,40,0.25)}
+
+  .lb-info{
+    position:absolute;bottom:max(52px,calc(env(safe-area-inset-bottom,18px)+34px));
+    left:50%;transform:translateX(-50%);
+    display:flex;gap:18px;font-size:11px;color:#b89868;letter-spacing:1px;white-space:nowrap;
+  }
+  .lb-info span{display:flex;align-items:center;gap:3px}
+
+  @media(max-width:600px){
+    .lb-nav{width:32px;height:32px;font-size:13px}
+    .lb-prev{left:3px}.lb-next{right:3px}
+    .lb-close{top:6px;right:6px;width:30px;height:30px;font-size:16px}
+    .title-overlay h1{font-size:17px;letter-spacing:7px}
+    .title-overlay .sub{font-size:9px;letter-spacing:4px}
+    .lb-info{gap:10px;font-size:10px;bottom:44px}
+    .photo-tooltip{max-width:200px;padding:12px 14px;font-size:12px}
+    .gesture-hints{gap:12px}
+    .gesture-hints .gh-icon{width:26px;height:26px;font-size:11px}
+    .gesture-hints .gh-label{font-size:8px}
+  }
+  ::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="loading-ring"></div>
+  <p class="loading-text" id="loadingText">星 河 加 载 中...</p>
+  <div class="loading-bar-wrap"><div class="loading-bar-fill" id="loadingBar"></div></div>
+</div>
+
+<div class="title-overlay" id="titleOverlay">
+  <h1>光 影 星 河</h1>
+  <p class="sub">S O L A R &nbsp; S Y S T E M</p>
+</div>
+
+<div class="hint" id="hint">滑动旋转视角 · 点击作品查看</div>
+<div class="gesture-hints" id="gestureHints">
+  <div class="gh-item"><div class="gh-icon">↔</div><div class="gh-label">旋转</div></div>
+  <div class="gh-item"><div class="gh-icon">⊕</div><div class="gh-label">缩放</div></div>
+  <div class="gh-item"><div class="gh-icon">⊙</div><div class="gh-label">查看</div></div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose">&times;</button>
+  <button class="lb-nav lb-prev" id="lbPrev">&#10094;</button>
+  <button class="lb-nav lb-next" id="lbNext">&#10095;</button>
+  <div class="lightbox-img-wrap"><img id="lbImg" src="" alt=""></div>
+  <div class="lb-info" id="lbInfo">
+    <span>📍 <span id="lbLocation"></span></span>
+    <span>📅 <span id="lbDate"></span></span>
+    <span>📷 <span id="lbCamera"></span></span>
+  </div>
+  <div class="lb-counter" id="lbCounter"></div>
+</div>
+
+<div class="photo-tooltip" id="photoTooltip">
+  <div class="tt-title" id="ttTitle"></div>
+  <div class="tt-row"><span class="tt-icon">📍</span><span id="ttLocation"></span></div>
+  <div class="tt-row"><span class="tt-icon">📅</span><span id="ttDate"></span></div>
+  <div class="tt-row"><span class="tt-icon">📷</span><span id="ttCamera"></span></div>
+  <div class="tt-divider"></div>
+  <div class="tt-row"><span class="tt-icon">⚙</span><span id="ttSettings"></span></div>
+  <button class="tt-btn" id="ttViewBtn">查 看 大 图</button>
+</div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ═══════════════════════════════════════════════
+//  PHOTO DATA
+// ═══════════════════════════════════════════════
+const photoFiles = [
+  'photo/2423801B77ACB5E507D1255CABB4C0BC.jpg',
+  'photo/_DSC0028.jpg','photo/_DSC0043.jpg','photo/_DSC0104.jpg',
+  'photo/_DSC0135.jpg','photo/_DSC0243.jpg','photo/_DSC0375.jpg',
+  'photo/_DSC0379.jpg','photo/_DSC0388.jpg','photo/_DSC0397.jpg',
+  'photo/_DSC0406.jpg','photo/_DSC0409.jpg','photo/_DSC0412.jpg',
+  'photo/_DSC0417.jpg','photo/_DSC0418.jpg','photo/_DSC0423.jpg',
+  'photo/_DSC0431.jpg','photo/_DSC0439.jpg','photo/_DSC0443.jpg',
+  'photo/_DSC0447.jpg','photo/_DSC0458.jpg','photo/_DSC0474.jpg',
+  'photo/_DSC0475.jpg','photo/_DSC0477.jpg','photo/_DSC0482.jpg',
+  'photo/_DSC0486.jpg','photo/_DSC0488.jpg','photo/_DSC0504.jpg',
+  'photo/_DSC0509.jpg','photo/_DSC0514.jpg','photo/_DSC0522.jpg',
+  'photo/_DSC0549.jpg','photo/_DSC0553.jpg','photo/_DSC0568.jpg',
+  'photo/_DSC0582.jpg','photo/_DSC0585.jpg','photo/_DSC0588.jpg',
+  'photo/_DSC0683.jpg','photo/_DSC0695.jpg','photo/_DSC0715.jpg',
+  'photo/_DSC0717.jpg','photo/_DSC0786.jpg','photo/_DSC0897.jpg',
+  'photo/_DSC0944.jpg','photo/_DSC1006.jpg','photo/_DSC1027.jpg',
+  'photo/_DSC1028.jpg','photo/_DSC1353.jpg','photo/_DSC1379.jpg',
+  'photo/_DSC1420.jpg','photo/_DSC1424.jpg','photo/_DSC1441.jpg',
+  'photo/_DSC1461.jpg','photo/_DSC1599.jpg','photo/_DSC1690.jpg',
+  'photo/_DSC1762.jpg','photo/_DSC1782.jpg','photo/_DSC1796.jpg',
+  'photo/_DSC1855.jpg','photo/_DSC1867.jpg','photo/_DSC1955.jpg',
+  'photo/_DSC1965.jpg','photo/_DSC1986.jpg','photo/_DSC1988.jpg',
+  'photo/_DSC1989.jpg','photo/_DSC2057.jpg','photo/_DSC2075.jpg',
+  'photo/_DSC2103.jpg','photo/_DSC2172.jpg',
+];
+
+const ratioOptions = ['tall','wide','square',null,null,null,null];
+const photos = photoFiles.map((file,i)=>({
+  id:i, title:`作品 ${i+1}`, date:'2025', location:'', camera:'', settings:'',
+  file, ratio:ratioOptions[i%ratioOptions.length], thumbSrc:file, fullSrc:file,
+}));
+const TOTAL = photos.length;
+
+// ═══════════════════════════════════════════════
+//  CANVAS TEXTURE GENERATORS
+// ═══════════════════════════════════════════════
+
+// Sun surface texture — granular with limb darkening
+function createSunTexture(size=512) {
+  const canvas = document.createElement('canvas');
+  canvas.width=size; canvas.height=size;
+  const ctx = canvas.getContext('2d');
+  const cx=size/2, cy=size/2, R=size/2;
+
+  // Base radial: bright white-hot center → yellow → orange → darker edge
+  const grad = ctx.createRadialGradient(cx,cy,R*0.05,cx,cy,R);
+  grad.addColorStop(0,'#fffef0');
+  grad.addColorStop(0.08,'#fff8c0');
+  grad.addColorStop(0.2,'#ffe860');
+  grad.addColorStop(0.4,'#ffbb22');
+  grad.addColorStop(0.65,'#ff8800');
+  grad.addColorStop(0.85,'#dd5500');
+  grad.addColorStop(0.96,'#993310');
+  grad.addColorStop(1,'#662208');
+  ctx.fillStyle=grad;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
+
+  // Granular surface (sunspots + bright granules)
+  for (let i=0;i<300;i++) {
+    const gx=cx+(Math.random()-0.5)*size*0.95;
+    const gy=cy+(Math.random()-0.5)*size*0.95;
+    const dist = Math.sqrt((gx-cx)**2+(gy-cy)**2);
+    if (dist>R*0.92) continue;
+    const gr=1.5+Math.random()*8;
+    const alpha=0.02+Math.random()*0.08;
+    const bright=Math.random()>0.7;
+    ctx.beginPath(); ctx.arc(gx,gy,gr,0,Math.PI*2);
+    ctx.fillStyle=bright
+      ?`rgba(255,255,240,${alpha})`
+      :`rgba(180,80,20,${alpha})`;
+    ctx.fill();
+  }
+
+  // Solar flare-like bright streaks near surface
+  for (let i=0;i<15;i++) {
+    const angle=Math.random()*Math.PI*2;
+    const sx=cx+Math.cos(angle)*R*0.85;
+    const sy=cy+Math.sin(angle)*R*0.85;
+    ctx.save();
+    ctx.globalAlpha=0.06+Math.random()*0.1;
+    const streak=ctx.createRadialGradient(sx,sy,0,sx,sy,20+Math.random()*40);
+    streak.addColorStop(0,'rgba(255,255,200,0.8)');
+    streak.addColorStop(1,'rgba(255,200,50,0)');
+    ctx.fillStyle=streak;
+    ctx.fillRect(sx-40,sy-40,80,80);
+    ctx.restore();
+  }
+
+  const tex=new THREE.CanvasTexture(canvas);
+  tex.needsUpdate=true; tex.colorSpace=THREE.SRGBColorSpace;
+  return tex;
+}
+
+// Corona glow texture
+function createCoronaTexture(innerBright, outerFade, size=512) {
+  const canvas=document.createElement('canvas');
+  canvas.width=size; canvas.height=size;
+  const ctx=canvas.getContext('2d');
+  const cx=size/2, cy=size/2;
+
+  const grad=ctx.createRadialGradient(cx,cy,size*0.18,cx,cy,size*0.5);
+  grad.addColorStop(0,innerBright);
+  grad.addColorStop(0.15,innerBright);
+  grad.addColorStop(0.5,outerFade);
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,size,size);
+
+  // Wispy corona streamers
+  for (let w=0;w<12;w++) {
+    const angle=(w/12)*Math.PI*2+Math.random()*0.15;
+    const wx=cx+Math.cos(angle)*size*0.1;
+    const wy=cy+Math.sin(angle)*size*0.1;
+    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.08+Math.random()*0.1;
+    const wgrad=ctx.createRadialGradient(wx,wy,0,wx,wy,size*0.35+Math.random()*size*0.1);
+    wgrad.addColorStop(0,innerBright);
+    wgrad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=wgrad; ctx.fillRect(0,0,size,size);
+    ctx.restore();
+  }
+
+  const tex=new THREE.CanvasTexture(canvas);
+  tex.needsUpdate=true; tex.colorSpace=THREE.SRGBColorSpace;
+  return tex;
+}
+
+// Planet texture (gas giant)
+function createPlanetTexture(baseHue, size=256) {
+  const canvas=document.createElement('canvas');
+  canvas.width=size; canvas.height=size/2;
+  const ctx=canvas.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,size/2);
+  grad.addColorStop(0,`hsl(${baseHue},40%,18%)`);
+  grad.addColorStop(0.15,`hsl(${baseHue},55%,35%)`);
+  grad.addColorStop(0.3,`hsl(${baseHue},35%,22%)`);
+  grad.addColorStop(0.45,`hsl(${baseHue+20},50%,40%)`);
+  grad.addColorStop(0.55,`hsl(${baseHue-10},45%,28%)`);
+  grad.addColorStop(0.7,`hsl(${baseHue},40%,20%)`);
+  grad.addColorStop(0.85,`hsl(${baseHue+10},50%,30%)`);
+  grad.addColorStop(1,`hsl(${baseHue},30%,15%)`);
+  ctx.fillStyle=grad; ctx.fillRect(0,0,size,size/2);
+  for (let b=0;b<20;b++){
+    const by=(b/20)*size/2;
+    ctx.strokeStyle=`rgba(255,255,255,${0.02+Math.random()*0.06})`;
+    ctx.lineWidth=2+Math.random()*8;
+    ctx.beginPath(); ctx.moveTo(0,by);
+    for (let x=0;x<=size;x+=size/40) ctx.lineTo(x,by+Math.sin(x*0.05+b*3)*4);
+    ctx.stroke();
+  }
+  for (let sp=0;sp<5;sp++){
+    const sx=Math.random()*size, sy=Math.random()*size/2, sr=3+Math.random()*15;
+    const sg=ctx.createRadialGradient(sx,sy,0,sx,sy,sr);
+    sg.addColorStop(0,`hsla(${baseHue+30},60%,55%,0.6)`);
+    sg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sg; ctx.fillRect(sx-sr,sy-sr,sr*2,sr*2);
+  }
+  const tex=new THREE.CanvasTexture(canvas);
+  tex.needsUpdate=true; tex.colorSpace=THREE.SRGBColorSpace;
+  tex.wrapS=THREE.RepeatWrapping; tex.wrapU=THREE.RepeatWrapping;
+  return tex;
+}
+
+// Nebula cloud (for background)
+function createNebulaTexture(innerColor, outerColor, size=512) {
+  const canvas=document.createElement('canvas');
+  canvas.width=size; canvas.height=size;
+  const ctx=canvas.getContext('2d');
+  const cx=size/2,cy=size/2;
+  const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,size*0.5);
+  grad.addColorStop(0,innerColor); grad.addColorStop(0.25,innerColor);
+  grad.addColorStop(0.5,outerColor); grad.addColorStop(0.75,'rgba(0,0,0,0)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,size,size);
+  for (let w=0;w<8;w++){
+    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.1+Math.random()*0.1;
+    const wx=cx+(Math.random()-0.5)*size*0.5, wy=cy+(Math.random()-0.5)*size*0.5;
+    const wg=ctx.createRadialGradient(wx,wy,0,wx,wy,size*0.3+Math.random()*size*0.15);
+    wg.addColorStop(0,innerColor); wg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=wg; ctx.fillRect(0,0,size,size);
+    ctx.restore();
+  }
+  for (let s=0;s<60;s++){
+    const sx=cx+(Math.random()-0.5)*size*0.9, sy=cy+(Math.random()-0.5)*size*0.9;
+    ctx.beginPath(); ctx.arc(sx,sy,1+Math.random()*4,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${0.03+Math.random()*0.06})`; ctx.fill();
+  }
+  const tex=new THREE.CanvasTexture(canvas);
+  tex.needsUpdate=true; tex.colorSpace=THREE.SRGBColorSpace;
+  return tex;
+}
+
+// ═══════════════════════════════════════════════
+//  SCENE SETUP
+// ═══════════════════════════════════════════════
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020210);
+scene.fog = new THREE.FogExp2(0x020210, 0.000035);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.5, 80);
+camera.position.set(2, 6, 16);
+camera.lookAt(0, 3.0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+
+// Lighting
+scene.add(new THREE.AmbientLight(0x181830, 0.8));
+const keyLight = new THREE.DirectionalLight(0x8899cc, 1.2);
+keyLight.position.set(8, 14, 5);
+keyLight.castShadow=true;
+keyLight.shadow.mapSize.width=1024; keyLight.shadow.mapSize.height=1024;
+keyLight.shadow.camera.near=0.5; keyLight.shadow.camera.far=60;
+keyLight.shadow.camera.left=-18; keyLight.shadow.camera.right=18;
+keyLight.shadow.camera.top=18; keyLight.shadow.camera.bottom=-5;
+keyLight.shadow.bias=-0.0002;
+scene.add(keyLight);
+
+// ═══════════════════════════════════════════════
+//  THE SUN — central star
+// ═══════════════════════════════════════════════
+const SUN_Y = 3.2;
+const sunGroup = new THREE.Group();
+sunGroup.position.set(0, SUN_Y, 0);
+
+// Main sphere with procedural texture
+const sunTex = createSunTexture();
+const sunGeom = new THREE.SphereGeometry(0.85, 64, 64);
+const sunMat = new THREE.MeshBasicMaterial({ map:sunTex });
+const sunSphere = new THREE.Mesh(sunGeom, sunMat);
+sunGroup.add(sunSphere);
+
+// Inner corona (bright ring close to surface)
+const innerCoronaTex = createCoronaTexture('rgba(255,220,100,0.7)','rgba(255,140,20,0.0)');
+const innerCorona = new THREE.Sprite(new THREE.SpriteMaterial({
+  map:innerCoronaTex, blending:THREE.AdditiveBlending, depthWrite:false,
+  transparent:true, opacity:0.8,
+}));
+innerCorona.scale.set(3.2, 3.2, 1);
+sunGroup.add(innerCorona);
+
+// Mid corona
+const midCoronaTex = createCoronaTexture('rgba(255,180,60,0.4)','rgba(255,100,10,0.0)');
+const midCorona = new THREE.Sprite(new THREE.SpriteMaterial({
+  map:midCoronaTex, blending:THREE.AdditiveBlending, depthWrite:false,
+  transparent:true, opacity:0.55,
+}));
+midCorona.scale.set(5.0, 5.0, 1);
+sunGroup.add(midCorona);
+
+// Outer corona (large faint glow)
+const outerCoronaTex = createCoronaTexture('rgba(255,150,40,0.18)','rgba(200,80,0,0.0)');
+const outerCorona = new THREE.Sprite(new THREE.SpriteMaterial({
+  map:outerCoronaTex, blending:THREE.AdditiveBlending, depthWrite:false,
+  transparent:true, opacity:0.35,
+}));
+outerCorona.scale.set(8.0, 8.0, 1);
+sunGroup.add(outerCorona);
+
+// Far glow halo
+const farGlowTex = createCoronaTexture('rgba(255,120,30,0.06)','rgba(150,60,0,0.0)');
+const farGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+  map:farGlowTex, blending:THREE.AdditiveBlending, depthWrite:false,
+  transparent:true, opacity:0.25,
+}));
+farGlow.scale.set(13, 13, 1);
+sunGroup.add(farGlow);
+
+// Sun point light — illuminates orbiting photos
+const sunLight = new THREE.PointLight(0xffddbb, 50, 18, 1.3);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width=512; sunLight.shadow.mapSize.height=512;
+sunLight.shadow.bias=-0.002;
+sunGroup.add(sunLight);
+
+// Secondary warm fill light
+const sunFill = new THREE.PointLight(0xffcc88, 15, 12, 2);
+sunGroup.add(sunFill);
+
+scene.add(sunGroup);
+
+// Solar flare particles — dancing near the surface
+const flareGroup = new THREE.Group();
+const flareParams = [];
+const FLARE_COUNT = 120;
+for (let i=0;i<FLARE_COUNT;i++){
+  const geom=new THREE.SphereGeometry(0.015+Math.random()*0.04,4,3);
+  const mat=new THREE.MeshBasicMaterial({
+    color:new THREE.Color().setHSL(0.1+Math.random()*0.1,0.9,0.55+Math.random()*0.45),
+    transparent:true, opacity:0.8, depthWrite:false,
+  });
+  const flare=new THREE.Mesh(geom,mat);
+  const phi=Math.random()*Math.PI*2;
+  const theta=Math.random()*Math.PI;
+  const r=0.88+Math.random()*1.2;
+  flare.position.set(
+    Math.cos(phi)*Math.sin(theta)*r,
+    Math.cos(theta)*r,
+    Math.sin(phi)*Math.sin(theta)*r
+  );
+  flareParams.push({
+    mesh:flare, baseR:r,
+    phi, theta,
+    phase:Math.random()*Math.PI*2,
+    speed:0.5+Math.random()*1.5,
+    amp:0.1+Math.random()*0.4,
+  });
+  flareGroup.add(flare);
+}
+sunGroup.add(flareGroup);
+
+// ═══════════════════════════════════════════════
+//  ORBITAL RINGS — photos evenly distributed in orbits
+// ═══════════════════════════════════════════════
+// Define orbits: each has radius, height, tilt, photo count, and speed
+// Tilt is an inclination angle; tiltDir is the direction of the ascending node
+const orbitDefs = [
+  { radius:2.4, height:SUN_Y, tilt:0.12, tiltDir:0.3,  count:7,  speed:0.18, scale:0.72 },
+  { radius:3.7, height:SUN_Y+0.25, tilt:0.20, tiltDir:1.8, count:10, speed:0.14, scale:0.65 },
+  { radius:5.2, height:SUN_Y-0.15, tilt:0.08, tiltDir:3.5, count:12, speed:0.11, scale:0.60 },
+  { radius:6.8, height:SUN_Y+0.35, tilt:0.25, tiltDir:5.0, count:14, speed:0.09, scale:0.56 },
+  { radius:8.3, height:SUN_Y-0.30, tilt:0.17, tiltDir:2.2, count:15, speed:0.07, scale:0.52 },
+  { radius:9.8, height:SUN_Y+0.10, tilt:0.30, tiltDir:4.0, count:11, speed:0.055, scale:0.48 },
+];
+// Verify total: 7+10+12+14+15+11 = 69 ✓
+
+const photoMeshes = [];
+const frameGroups = [];
+
+function createPhotoFrame(photo, index, scale=1.0) {
+  const group = new THREE.Group();
+  group.name = `photo-${index}`;
+  const pw = 1.2*scale;
+  let ph;
+  if (photo.ratio==='tall') ph=1.55*scale;
+  else if (photo.ratio==='wide') ph=0.72*scale;
+  else ph=1.2*scale;
+
+  const photoGeom = new THREE.PlaneGeometry(pw, ph);
+  const photoMat = new THREE.MeshStandardMaterial({ color:0x1a1830, roughness:0.4, metalness:0.05 });
+  const photoPlane = new THREE.Mesh(photoGeom, photoMat);
+  photoPlane.castShadow = true;
+  group.add(photoPlane);
+
+  const borderGeom = new THREE.PlaneGeometry(pw+0.07, ph+0.07);
+  const borderMat = new THREE.MeshStandardMaterial({ color:0x282445, roughness:0.28, metalness:0.45 });
+  const border = new THREE.Mesh(borderGeom, borderMat);
+  border.position.z = -0.01;
+  border.castShadow = true;
+  group.add(border);
+
+  group.userData = { photoIndex:index, photoData:photo, photoPlane, photoMat, pw, ph };
+  return group;
+}
+
+// Distribute all 69 photos across orbital rings
+let photoIdx = 0;
+for (const orbit of orbitDefs) {
+  const { radius, height, tilt, tiltDir, count, speed, scale } = orbit;
+  for (let j=0; j<count; j++) {
+    if (photoIdx >= TOTAL) break;
+    const photo = photos[photoIdx];
+    const fg = createPhotoFrame(photo, photoIdx, scale);
+
+    // Evenly spaced starting angle
+    const startAngle = (j/count)*Math.PI*2 + (Math.random()-0.5)*0.08;
+
+    // Position on tilted orbit
+    const x = Math.cos(startAngle)*radius;
+    const z = Math.sin(startAngle)*radius;
+    // Tilt: vertical offset based on position along tilted axis
+    const tiltOffset = Math.sin(startAngle+tiltDir)*radius*Math.sin(tilt);
+    const y = height+tiltOffset;
+
+    fg.position.set(x, y, z);
+    // Face outward from Sun
+    fg.rotation.y = startAngle+Math.PI;
+    fg.rotation.z = (Math.random()-0.5)*0.15;
+    fg.rotation.x = (Math.random()-0.5)*0.1;
+
+    scene.add(fg);
+
+    frameGroups.push({
+      group: fg,
+      orbitRadius: radius,
+      orbitHeight: height,
+      orbitTilt: tilt,
+      orbitTiltDir: tiltDir,
+      orbitSpeed: speed,
+      currentAngle: startAngle,
+      baseScale: scale,
+      swayPhase: Math.random()*Math.PI*2,
+    });
+    photoMeshes.push({ mesh:fg, index:photoIdx });
+    photoIdx++;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  BACKGROUND STARFIELD (4000 stars, full sphere)
+// ═══════════════════════════════════════════════
+const starsGeom = new THREE.BufferGeometry();
+const STAR_COUNT = 4000;
+const starPosArr = new Float32Array(STAR_COUNT*3);
+const starColArr = new Float32Array(STAR_COUNT*3);
+for (let i=0;i<STAR_COUNT;i++){
+  const phi=Math.acos(2*Math.random()-1);
+  const theta=Math.random()*Math.PI*2;
+  const r=18+Math.random()*35;
+  starPosArr[i*3]=Math.cos(theta)*Math.sin(phi)*r;
+  starPosArr[i*3+1]=Math.sin(phi)*r;
+  starPosArr[i*3+2]=Math.cos(phi)*r;
+  const temp=Math.random();
+  let hue,sat,light;
+  if (temp<0.6){hue=0.6+Math.random()*0.15;sat=0.05;light=0.6+Math.random()*0.4;}
+  else if (temp<0.85){hue=0.12+Math.random()*0.08;sat=0.1;light=0.7+Math.random()*0.3;}
+  else if (temp<0.95){hue=0.75+Math.random()*0.1;sat=0.2;light=0.5+Math.random()*0.4;}
+  else {hue=0;sat=0;light=0.85+Math.random()*0.15;}
+  const c=new THREE.Color().setHSL(hue,sat,light);
+  starColArr[i*3]=c.r; starColArr[i*3+1]=c.g; starColArr[i*3+2]=c.b;
+}
+starsGeom.setAttribute('position', new THREE.BufferAttribute(starPosArr,3));
+starsGeom.setAttribute('color', new THREE.BufferAttribute(starColArr,3));
+const starsMat = new THREE.PointsMaterial({
+  size:0.09, blending:THREE.AdditiveBlending, depthWrite:false,
+  transparent:true, opacity:0.6, vertexColors:true, sizeAttenuation:true,
+});
+const stars = new THREE.Points(starsGeom, starsMat);
+scene.add(stars);
+
+// ═══════════════════════════════════════════════
+//  NEBULA CLOUDS — background wisps
+// ═══════════════════════════════════════════════
+const nebulaSprites = [];
+const nebulaDefs = [
+  { angle:0.5, r:7, hy:1.0, s:5, ic:'rgba(100,70,200,0.22)', oc:'rgba(30,10,100,0.0)' },
+  { angle:2.0, r:6, hy:-1.2, s:5.5, ic:'rgba(70,50,180,0.20)', oc:'rgba(20,10,80,0.0)' },
+  { angle:3.5, r:8, hy:1.5, s:4.5, ic:'rgba(120,90,220,0.18)', oc:'rgba(40,15,110,0.0)' },
+  { angle:5.0, r:6.5, hy:-0.8, s:5.0, ic:'rgba(80,55,190,0.20)', oc:'rgba(25,10,90,0.0)' },
+  { angle:0.9, r:9, hy:0.3, s:6.0, ic:'rgba(60,40,160,0.15)', oc:'rgba(15,5,70,0.0)' },
+  { angle:2.8, r:10, hy:-1.8, s:5.5, ic:'rgba(90,65,200,0.16)', oc:'rgba(30,12,95,0.0)' },
+  { angle:4.2, r:7.5, hy:2.0, s:4.8, ic:'rgba(110,80,210,0.17)', oc:'rgba(35,15,105,0.0)' },
+  { angle:5.8, r:8.5, hy:-0.5, s:5.2, ic:'rgba(75,45,175,0.16)', oc:'rgba(20,8,85,0.0)' },
+  // Extra wide background nebulae
+  { angle:1.5, r:12, hy:0, s:9, ic:'rgba(50,30,140,0.10)', oc:'rgba(10,5,50,0.0)' },
+  { angle:4.5, r:11, hy:-0.5, s:8, ic:'rgba(55,35,150,0.08)', oc:'rgba(10,5,55,0.0)' },
+];
+
+nebulaDefs.forEach(def=>{
+  const tex=createNebulaTexture(def.ic, def.oc);
+  const mat=new THREE.SpriteMaterial({
+    map:tex, blending:THREE.AdditiveBlending, depthWrite:false,
+    transparent:true, opacity:0.45,
+  });
+  const sprite=new THREE.Sprite(mat);
+  sprite.position.set(
+    Math.cos(def.angle)*def.r,
+    SUN_Y+def.hy,
+    Math.sin(def.angle)*def.r
+  );
+  sprite.scale.set(def.s, def.s*0.7, 1);
+  sprite.userData={baseY:SUN_Y+def.hy, phase:Math.random()*Math.PI*2, speed:0.08+Math.random()*0.2};
+  scene.add(sprite);
+  nebulaSprites.push(sprite);
+});
+
+// ═══════════════════════════════════════════════
+//  DISTANT PLANETS (beyond the photo orbits)
+// ═══════════════════════════════════════════════
+const planets = [];
+function createPlanet(radius, dist, angle, hy, hue, ring=false, ringColor=null) {
+  const group=new THREE.Group();
+  const tex=createPlanetTexture(hue);
+  const geom=new THREE.SphereGeometry(radius, 48, 48);
+  const mat=new THREE.MeshStandardMaterial({ map:tex, roughness:0.7, metalness:0.05 });
+  const planet=new THREE.Mesh(geom, mat);
+  group.add(planet);
+  const atmoGeom=new THREE.SphereGeometry(radius*1.08, 32, 32);
+  const atmoMat=new THREE.MeshBasicMaterial({
+    color:new THREE.Color().setHSL(hue+0.05, 0.4, 0.6),
+    transparent:true, opacity:0.1, depthWrite:false,
+  });
+  group.add(new THREE.Mesh(atmoGeom, atmoMat));
+  if (ring) {
+    const ringGeom=new THREE.TorusGeometry(radius*1.5, radius*0.2, 16, 80);
+    const ringMat=new THREE.MeshStandardMaterial({
+      color:ringColor||0xccbbaa, roughness:0.5, metalness:0.3,
+      side:THREE.DoubleSide, transparent:true, opacity:0.65,
+    });
+    const r1=new THREE.Mesh(ringGeom, ringMat);
+    r1.rotation.x=Math.PI*0.35; group.add(r1);
+    const ring2Geom=new THREE.TorusGeometry(radius*1.85, radius*0.08, 12, 80);
+    const ring2Mat=new THREE.MeshStandardMaterial({
+      color:ringColor||0xccbbaa, roughness:0.4, metalness:0.4,
+      side:THREE.DoubleSide, transparent:true, opacity:0.35,
+    });
+    const r2=new THREE.Mesh(ring2Geom, ring2Mat);
+    r2.rotation.x=Math.PI*0.32; group.add(r2);
+  }
+  group.position.set(Math.cos(angle)*dist, SUN_Y+hy, Math.sin(angle)*dist);
+  group.rotation.y=angle+Math.PI;
+  group.userData={rotSpeed:0.02+Math.random()*0.05, planet};
+  scene.add(group);
+  planets.push(group);
+}
+
+createPlanet(1.0, 13, 0.7, 2.2, 0.58, true, 0xddcc99);
+createPlanet(0.6, 15, 3.8, -1.8, 0.62, false);
+createPlanet(0.3, 11.5, 5.0, -2.5, 0.12, false);
+createPlanet(0.75, 19, 2.3, 0.5, 0.55, true, 0xbbaacc);
+
+// ═══════════════════════════════════════════════
+//  COSMIC DUST PARTICLES — orbiting in the system
+// ═══════════════════════════════════════════════
+const DUST_COUNT = 800;
+const dustGeom = new THREE.BufferGeometry();
+const dustPosArr = new Float32Array(DUST_COUNT*3);
+const dustParams = [];
+for (let i=0;i<DUST_COUNT;i++){
+  const phi=Math.random()*Math.PI*2;
+  const r=1.5+Math.random()*10.5;
+  const hy=(Math.random()-0.5)*4;
+  dustPosArr[i*3]=Math.cos(phi)*r;
+  dustPosArr[i*3+1]=SUN_Y+hy;
+  dustPosArr[i*3+2]=Math.sin(phi)*r;
+  dustParams.push({
+    baseY:SUN_Y+hy, radius:r, angle:phi,
+    orbitSpeed:(Math.random()-0.5)*0.2,
+    vertAmp:0.2+Math.random()*0.8,
+    phase:Math.random()*Math.PI*2,
+    speed:0.15+Math.random()*0.6,
+  });
+}
+dustGeom.setAttribute('position', new THREE.BufferAttribute(dustPosArr,3));
+const dustParticles = new THREE.Points(dustGeom, new THREE.PointsMaterial({
+  color:0xccaa88, size:0.04, blending:THREE.AdditiveBlending,
+  depthWrite:false, transparent:true, opacity:0.4,
+}));
+scene.add(dustParticles);
+
+// Inner warm dust near Sun
+const INNER_COUNT = 250;
+const innerGeom = new THREE.BufferGeometry();
+const innerPosArr = new Float32Array(INNER_COUNT*3);
+for (let i=0;i<INNER_COUNT;i++){
+  const phi=Math.random()*Math.PI*2;
+  const r=0.95+Math.random()*3;
+  const hy=(Math.random()-0.5)*1.5;
+  innerPosArr[i*3]=Math.cos(phi)*r;
+  innerPosArr[i*3+1]=SUN_Y+hy;
+  innerPosArr[i*3+2]=Math.sin(phi)*r;
+}
+innerGeom.setAttribute('position', new THREE.BufferAttribute(innerPosArr,3));
+const innerDust = new THREE.Points(innerGeom, new THREE.PointsMaterial({
+  color:0xffcc88, size:0.02, blending:THREE.AdditiveBlending,
+  depthWrite:false, transparent:true, opacity:0.5,
+}));
+scene.add(innerDust);
+
+// ═══════════════════════════════════════════════
+//  ORBIT PATH RINGS — subtle visual guides
+// ═══════════════════════════════════════════════
+orbitDefs.forEach(orbit=>{
+  const points=[];
+  const steps=200;
+  for (let s=0;s<=steps;s++){
+    const a=(s/steps)*Math.PI*2;
+    const x=Math.cos(a)*orbit.radius;
+    const z=Math.sin(a)*orbit.radius;
+    const to=Math.sin(a+orbit.tiltDir)*orbit.radius*Math.sin(orbit.tilt);
+    const y=orbit.height+to;
+    points.push(new THREE.Vector3(x,y,z));
+  }
+  const curve=new THREE.CatmullRomCurve3(points, true);
+  const tubeGeom=new THREE.TubeGeometry(curve, 200, 0.015, 8, true);
+  const tubeMat=new THREE.MeshBasicMaterial({
+    color:0x443322, transparent:true, opacity:0.18, depthWrite:false,
+  });
+  const tube=new THREE.Mesh(tubeGeom, tubeMat);
+  scene.add(tube);
+});
+
+// ═══════════════════════════════════════════════
+//  ORBIT CONTROLS
+// ═══════════════════════════════════════════════
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, SUN_Y, 0);
+controls.enableDamping=true; controls.dampingFactor=0.07;
+controls.minDistance=4; controls.maxDistance=30;
+controls.maxPolarAngle=Math.PI*0.7; controls.minPolarAngle=0.2;
+controls.autoRotate=true; controls.autoRotateSpeed=0.15;
+controls.update();
+
+// ═══════════════════════════════════════════════
+//  RAYCASTER + TOOLTIP
+// ═══════════════════════════════════════════════
+const raycaster = new THREE.Raycaster(); raycaster.far=32;
+const mouse = new THREE.Vector2();
+
+function getIntersection(event) {
+  mouse.x=(event.clientX/window.innerWidth)*2-1;
+  mouse.y=-(event.clientY/window.innerHeight)*2+1;
+  raycaster.setFromCamera(mouse, camera);
+  const targets=photoMeshes.map(p=>p.mesh);
+  const intersects=raycaster.intersectObjects(targets, true);
+  if (intersects.length>0){
+    let obj=intersects[0].object;
+    while(obj){
+      const found=photoMeshes.find(p=>p.mesh===obj);
+      if (found){
+        const wp=new THREE.Vector3(); found.mesh.getWorldPosition(wp);
+        const sp=wp.clone().project(camera);
+        return {
+          index:found.index,
+          screenX:(sp.x*0.5+0.5)*window.innerWidth,
+          screenY:(-sp.y*0.5+0.5)*window.innerHeight,
+          behindCamera:sp.z>1,
+        };
+      }
+      obj=obj.parent;
+    }
+  }
+  return null;
+}
+
+const tooltip=document.getElementById('photoTooltip');
+const ttTitle=document.getElementById('ttTitle');
+const ttLoc=document.getElementById('ttLocation');
+const ttDate=document.getElementById('ttDate');
+const ttCamera=document.getElementById('ttCamera');
+const ttSettings=document.getElementById('ttSettings');
+const ttViewBtn=document.getElementById('ttViewBtn');
+let tipIdx=-1, tipVis=false;
+
+function showTooltip(idx,x,y){
+  const p=photos[idx];
+  ttTitle.textContent=p.title; ttLoc.textContent=p.location;
+  ttDate.textContent=p.date; ttCamera.textContent=p.camera;
+  ttSettings.textContent=p.settings; tipIdx=idx;
+  const tw=tooltip.offsetWidth||230, th=tooltip.offsetHeight||180;
+  let left=x-tw/2, top=y-th-20;
+  if (left<10) left=10;
+  if (left+tw>window.innerWidth-10) left=window.innerWidth-tw-10;
+  if (top<10) top=y+25;
+  tooltip.style.left=left+'px'; tooltip.style.top=top+'px';
+  tooltip.classList.add('visible'); tipVis=true;
+}
+function hideTooltip(){tooltip.classList.remove('visible');tipVis=false;tipIdx=-1;}
+
+renderer.domElement.addEventListener('mousemove',(e)=>{
+  const r=getIntersection(e);
+  if (r&&!r.behindCamera){
+    if (tipIdx!==r.index||!tipVis) showTooltip(r.index,r.screenX,r.screenY);
+    renderer.domElement.style.cursor='pointer';
+  }else{hideTooltip();renderer.domElement.style.cursor='grab';}
+});
+renderer.domElement.addEventListener('mouseleave',hideTooltip);
+
+let clickStart={x:0,y:0}, isDragging=false;
+renderer.domElement.addEventListener('pointerdown',(e)=>{clickStart={x:e.clientX,y:e.clientY};isDragging=false;});
+renderer.domElement.addEventListener('pointermove',(e)=>{
+  if (Math.abs(e.clientX-clickStart.x)>5||Math.abs(e.clientY-clickStart.y)>5) isDragging=true;
+});
+renderer.domElement.addEventListener('pointerup',(e)=>{
+  if (isDragging) return;
+  const r=getIntersection(e);
+  if (r&&!r.behindCamera){
+    if (e.pointerType==='touch'){
+      if (tipVis&&tipIdx===r.index){openLightbox(r.index);hideTooltip();}
+      else showTooltip(r.index,r.screenX,r.screenY);
+    }else{openLightbox(r.index);hideTooltip();}
+  }else hideTooltip();
+});
+ttViewBtn.addEventListener('click',(e)=>{
+  e.stopPropagation();
+  if (tipIdx>=0){openLightbox(tipIdx);hideTooltip();}
+});
+
+// ═══════════════════════════════════════════════
+//  LIGHTBOX
+// ═══════════════════════════════════════════════
+const lightbox=document.getElementById('lightbox');
+const lbImg=document.getElementById('lbImg');
+const lbCounter=document.getElementById('lbCounter');
+const lbLoc=document.getElementById('lbLocation');
+const lbDate=document.getElementById('lbDate');
+const lbCamera=document.getElementById('lbCamera');
+let curIdx=0;
+
+function openLightbox(idx){curIdx=idx;updateLb();lightbox.classList.add('open');document.body.style.cursor='default';}
+function closeLightbox(){lightbox.classList.remove('open');}
+function updateLb(){
+  const p=photos[curIdx];
+  lbImg.style.opacity='0';
+  lbCounter.textContent=`${curIdx+1} / ${TOTAL}  ·  ${p.title}`;
+  lbLoc.textContent=p.location; lbDate.textContent=p.date;
+  lbCamera.textContent=p.camera+'  '+p.settings;
+  lbImg.src=p.fullSrc;
+  lbImg.onload=()=>{lbImg.style.opacity='1';};
+  lbImg.onerror=()=>{lbImg.style.opacity='1';};
+}
+function lbNav(dir){curIdx=(curIdx+dir+TOTAL)%TOTAL;updateLb();}
+
+document.getElementById('lbClose').addEventListener('click',(e)=>{e.stopPropagation();closeLightbox();});
+document.getElementById('lbPrev').addEventListener('click',(e)=>{e.stopPropagation();lbNav(-1);});
+document.getElementById('lbNext').addEventListener('click',(e)=>{e.stopPropagation();lbNav(1);});
+lightbox.addEventListener('click',(e)=>{if(e.target===lightbox)closeLightbox();});
+document.addEventListener('keydown',(e)=>{
+  if (!lightbox.classList.contains('open')) return;
+  if (e.key==='Escape') closeLightbox();
+  if (e.key==='ArrowLeft') lbNav(-1);
+  if (e.key==='ArrowRight') lbNav(1);
+});
+let lbTX=0;
+lightbox.addEventListener('touchstart',(e)=>{lbTX=e.touches[0].clientX;},{passive:true});
+lightbox.addEventListener('touchend',(e)=>{
+  const dx=e.changedTouches[0].clientX-lbTX;
+  if (Math.abs(dx)>50) lbNav(dx>0?-1:1);
+});
+
+// ═══════════════════════════════════════════════
+//  TEXTURE LOADING
+// ═══════════════════════════════════════════════
+const texLoader = new THREE.TextureLoader();
+let loadedCount = 0;
+
+function loadTextures(){
+  const bar=document.getElementById('loadingBar');
+  frameGroups.forEach(({group})=>{
+    const {photoData, photoMat}=group.userData;
+    texLoader.load(
+      photoData.thumbSrc,
+      (tex)=>{
+        tex.colorSpace=THREE.SRGBColorSpace;
+        tex.minFilter=THREE.LinearMipmapLinearFilter;
+        tex.magFilter=THREE.LinearFilter;
+        tex.generateMipmaps=true;
+        photoMat.map=tex; photoMat.color.set(0xffffff);
+        photoMat.needsUpdate=true;
+        loadedCount++;
+        updateLoad(bar);
+        if (loadedCount===TOTAL) hideLoading();
+      },
+      undefined,
+      ()=>{
+        loadedCount++;
+        updateLoad(bar);
+        if (loadedCount===TOTAL) hideLoading();
+      }
+    );
+  });
+}
+function updateLoad(bar){
+  const pct=Math.round((loadedCount/TOTAL)*100);
+  document.getElementById('loadingText').textContent=`星河加载中... ${loadedCount}/${TOTAL}`;
+  bar.style.width=pct+'%';
+}
+function hideLoading(){
+  setTimeout(()=>{
+    document.getElementById('loading').classList.add('hidden');
+    setTimeout(()=>{
+      document.getElementById('hint').style.opacity='0';
+      document.getElementById('gestureHints').style.opacity='0';
+    },12000);
+  },400);
+}
+
+// ═══════════════════════════════════════════════
+//  ANIMATION LOOP
+// ═══════════════════════════════════════════════
+const clock = new THREE.Clock();
+
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  const dt=Math.min(clock.getDelta(),0.1);
+  controls.update();
+
+  // ── Photos orbit around the Sun ──
+  frameGroups.forEach(fg=>{
+    // Advance orbital angle
+    fg.currentAngle += fg.orbitSpeed*dt;
+    const a=fg.currentAngle;
+    const r=fg.orbitRadius;
+
+    // Position on tilted orbit
+    const x=Math.cos(a)*r;
+    const z=Math.sin(a)*r;
+    const to=Math.sin(a+fg.orbitTiltDir)*r*Math.sin(fg.orbitTilt);
+    const y=fg.orbitHeight+to;
+
+    // Gentle bobbing
+    const bob=Math.sin(t*0.5+fg.swayPhase)*0.1;
+
+    fg.group.position.set(x, y+bob, z);
+    // Face outward from Sun
+    fg.group.rotation.y=a+Math.PI;
+    fg.group.rotation.z+=Math.sin(t*0.7+fg.swayPhase)*0.0003;
+  });
+
+  // ── Sun animation ──
+  sunGroup.rotation.y+=0.002;
+  const sunPulse=1+Math.sin(t*1.5)*0.02+Math.sin(t*3.2)*0.01;
+  sunSphere.scale.setScalar(sunPulse);
+  sunLight.intensity=50+Math.sin(t*1.8)*3+Math.sin(t*4.1)*2;
+  innerCorona.material.opacity=0.7+Math.sin(t*2.0)*0.1;
+  midCorona.material.opacity=0.45+Math.sin(t*1.7)*0.08;
+  outerCorona.material.opacity=0.3+Math.sin(t*1.3)*0.05;
+
+  // Solar flares
+  flareParams.forEach(fp=>{
+    const {mesh, baseR, phi, theta, phase, speed, amp}=fp;
+    const r=baseR+Math.sin(t*speed+phase)*amp;
+    mesh.position.set(
+      Math.cos(phi)*Math.sin(theta)*r,
+      Math.cos(theta)*r,
+      Math.sin(phi)*Math.sin(theta)*r
+    );
+    mesh.material.opacity=0.4+Math.sin(t*speed+phase)*0.4;
+  });
+
+  // ── Dust orbit ──
+  const dArr=dustParticles.geometry.attributes.position.array;
+  for (let i=0;i<dustParams.length;i++){
+    const p=dustParams[i];
+    const a=p.angle+t*p.orbitSpeed;
+    dArr[i*3]=Math.cos(a)*p.radius;
+    dArr[i*3+1]=p.baseY+Math.sin(t*p.speed+p.phase)*p.vertAmp;
+    dArr[i*3+2]=Math.sin(a)*p.radius;
+  }
+  dustParticles.geometry.attributes.position.needsUpdate=true;
+  dustParticles.material.opacity=0.3+Math.sin(t*1.1)*0.07+Math.sin(t*2.8)*0.05;
+
+  // ── Inner dust drift ──
+  const inArr=innerDust.geometry.attributes.position.array;
+  for (let i=0;i<inArr.length;i+=3){
+    inArr[i+1]+=0.002+Math.sin(t+i*0.1)*0.001;
+    if (inArr[i+1]>SUN_Y+2) inArr[i+1]=SUN_Y-2;
+  }
+  innerDust.geometry.attributes.position.needsUpdate=true;
+
+  // ── Nebula sway ──
+  nebulaSprites.forEach(s=>{
+    s.position.y=s.userData.baseY+Math.sin(t*s.userData.speed+s.userData.phase)*0.5;
+    s.material.opacity=0.3+Math.sin(t*0.7+s.userData.phase)*0.12;
+  });
+
+  // ── Planet rotation ──
+  planets.forEach(p=>{
+    if (p.userData.rotSpeed) p.userData.planet.rotation.y+=p.userData.rotSpeed*0.01;
+  });
+
+  // ── Stars ──
+  stars.rotation.y+=0.00012;
+  stars.rotation.x+=0.00004;
+  stars.material.opacity=0.5+Math.sin(t*0.3)*0.08;
+
+  renderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════
+window.addEventListener('resize',()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+window.addEventListener('orientationchange',()=>{
+  setTimeout(()=>{
+    camera.aspect=window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  },300);
+});
+
+// ═══════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════
+loadTextures();
+animate();
+console.log('☀️ 光影星河已就绪 — %c太阳系摄影展%c','color:#ffbb44;font-size:16px;','');
+console.log(`   ${TOTAL} 张作品围绕太阳运行 · ${STAR_COUNT} 颗恒星 · ${orbitDefs.length} 条轨道`);
+</script>
+</body>
+</html>
