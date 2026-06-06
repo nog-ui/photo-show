@@ -238,7 +238,9 @@ const photoFiles = [
 const ratioOptions = ['tall','wide','square',null,null,null,null];
 const photos = photoFiles.map((file,i)=>({
   id:i, title:`作品 ${i+1}`, date:'2025', location:'', camera:'', settings:'',
-  file, ratio:ratioOptions[i%ratioOptions.length], thumbSrc:file, fullSrc:file,
+  file, ratio:ratioOptions[i%ratioOptions.length],
+  thumbSrc: file.replace('photo/','photo/thumb/'),
+  fullSrc: file,
 }));
 const TOTAL = photos.length;
 
