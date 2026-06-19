@@ -943,29 +943,52 @@ let loadedCount = 0;
 
 function loadTextures(){
   const bar=document.getElementById('loadingBar');
-  frameGroups.forEach(({group})=>{
-    const {photoData, photoMat}=group.userData;
-    texLoader.load(
-      photoData.thumbSrc,
-      (tex)=>{
-        tex.colorSpace=THREE.SRGBColorSpace;
-        tex.minFilter=THREE.LinearMipmapLinearFilter;
-        tex.magFilter=THREE.LinearFilter;
-        tex.generateMipmaps=true;
-        photoMat.map=tex; photoMat.color.set(0xffffff);
-        photoMat.needsUpdate=true;
-        loadedCount++;
-        updateLoad(bar);
-        if (loadedCount===TOTAL) hideLoading();
-      },
-      undefined,
-      ()=>{
-        loadedCount++;
-        updateLoad(bar);
-        if (loadedCount===TOTAL) hideLoading();
-      }
-    );
-  });
+  const items=frameGroups.map(fg=>({data:fg.group.userData}));
+
+  // Batch loading: 8 concurrent per batch, avoiding mobile network flood
+  var BATCH=8;
+  var idx=0;
+
+  function loadNextBatch(){
+    var batch=items.slice(idx, idx+BATCH);
+    if (batch.length===0) return;
+    idx+=BATCH;
+
+    var batchDone=0;
+    var batchTotal=batch.length;
+
+    batch.forEach(function(item){
+      var data=item.data;
+      var photoData=data.photoData;
+      var photoMat=data.photoMat;
+      texLoader.load(
+        photoData.thumbSrc,
+        function(tex){
+          tex.colorSpace=THREE.SRGBColorSpace;
+          tex.minFilter=THREE.LinearMipmapLinearFilter;
+          tex.magFilter=THREE.LinearFilter;
+          tex.generateMipmaps=true;
+          photoMat.map=tex; photoMat.color.set(0xffffff);
+          photoMat.needsUpdate=true;
+          loadedCount++;
+          batchDone++;
+          updateLoad(bar);
+          if (loadedCount===TOTAL) hideLoading();
+          if (batchDone===batchTotal) loadNextBatch();
+        },
+        undefined,
+        function(){
+          loadedCount++;
+          batchDone++;
+          updateLoad(bar);
+          if (loadedCount===TOTAL) hideLoading();
+          if (batchDone===batchTotal) loadNextBatch();
+        }
+      );
+    });
+  }
+
+  loadNextBatch();
 }
 function updateLoad(bar){
   const pct=Math.round((loadedCount/TOTAL)*100);
