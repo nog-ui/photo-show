@@ -196,6 +196,12 @@
 </div>
 
 <script src="https://cdn.bootcdn.net/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<script>
+// THREE.js fallback: if primary CDN fails, try jsdelivr
+if (typeof THREE === 'undefined') {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"><\/script>');
+}
+</script>
 
 
 
@@ -272,11 +278,32 @@ THREE.SimpleControls = function(camera, domElement) {
 <script>
 
 var __d=document.getElementById("__debug");
-function _log(m){if(__d)__d.textContent+=m+"
-";console.log(m);}
+function _log(m){if(__d)__d.textContent+=m+"\n";console.log(m);}
 _log("1. HTML parsed");
 // THREE loaded via global
 // OrbitControls loaded via global
+
+// Global error handler — ensure loading screen can always be dismissed
+window.addEventListener('error', function(e) {
+  console.error('Global error caught:', e.message, e.filename, e.lineno);
+  var loadEl = document.getElementById('loading');
+  if (loadEl && !loadEl.classList.contains('hidden')) {
+    document.getElementById('loadingText').textContent = '脚本错误，请刷新页面重试';
+    document.getElementById('loadingBar').style.background = '#ff6644';
+    // Allow user to dismiss by clicking
+    loadEl.style.cursor = 'pointer';
+    loadEl.onclick = function() { loadEl.classList.add('hidden'); };
+  }
+});
+
+// Hard timeout: regardless of what happens, dismiss loading after 20s
+setTimeout(function() {
+  var loadEl = document.getElementById('loading');
+  if (loadEl && !loadEl.classList.contains('hidden')) {
+    console.warn('Hard timeout: force-dismissing loading screen');
+    loadEl.classList.add('hidden');
+  }
+}, 20000);
 
 // ═══════════════════════════════════════════════
 //  PHOTO DATA
@@ -981,7 +1008,7 @@ const lbDate=document.getElementById('lbDate');
 const lbCamera=document.getElementById('lbCamera');
 let curIdx=0;
 
-function window.location.href='detail.html?index='+idx{curIdx=idx;updateLb();lightbox.classList.add('open');document.body.style.cursor='default';}
+function openLightbox(idx){curIdx=idx;updateLb();lightbox.classList.add('open');document.body.style.cursor='default';}
 function closeLightbox(){lightbox.classList.remove('open');}
 function updateLb(){
   const p=photos[curIdx];
@@ -1198,11 +1225,16 @@ _log("5. Starting texture load...");loadTextures();_log("6. Animation loop start
 console.log('☀️ 光影星河已就绪 — %c太阳系摄影展%c','color:#ffbb44;font-size:16px;','');
 console.log(`   ${TOTAL} 张作品围绕太阳运行 · ${STAR_COUNT} 颗恒星 · ${orbitDefs.length} 条轨道`);
 
-// Fallback: if loading takes >15s, show error
+// Fallback: if loading takes >15s, show error + allow dismiss
 setTimeout(() => {
   if (loadedCount < TOTAL) {
     document.getElementById('loadingText').textContent = '加载缓慢，请刷新页面重试';
     document.getElementById('loadingBar').style.background = '#ff6644';
+    // Allow user to dismiss by clicking anywhere on the loading overlay
+    var loadEl = document.getElementById('loading');
+    loadEl.style.cursor = 'pointer';
+    loadEl.title = '点击关闭加载画面';
+    loadEl.onclick = function() { loadEl.classList.add('hidden'); };
   }
 }, 15000);
 </script>
