@@ -892,14 +892,14 @@ renderer.domElement.addEventListener('pointerup',(e)=>{
   const r=getIntersection(e);
   if (r&&!r.behindCamera){
     if (e.pointerType==='touch'){
-      if (tipVis&&tipIdx===r.index){openLightbox(r.index);hideTooltip();}
+      if (tipVis&&tipIdx===r.index){window.location.href='detail.html?index='+r.index;hideTooltip();}
       else showTooltip(r.index,r.screenX,r.screenY);
-    }else{openLightbox(r.index);hideTooltip();}
+    }else{window.location.href='detail.html?index='+r.index;hideTooltip();}
   }else hideTooltip();
 });
 ttViewBtn.addEventListener('click',(e)=>{
   e.stopPropagation();
-  if (tipIdx>=0){openLightbox(tipIdx);hideTooltip();}
+  if (tipIdx>=0){window.location.href='detail.html?index='+tipIdx;hideTooltip();}
 });
 
 // ═══════════════════════════════════════════════
@@ -913,7 +913,7 @@ const lbDate=document.getElementById('lbDate');
 const lbCamera=document.getElementById('lbCamera');
 let curIdx=0;
 
-function openLightbox(idx){curIdx=idx;updateLb();lightbox.classList.add('open');document.body.style.cursor='default';}
+function window.location.href='detail.html?index='+idx{curIdx=idx;updateLb();lightbox.classList.add('open');document.body.style.cursor='default';}
 function closeLightbox(){lightbox.classList.remove('open');}
 function updateLb(){
   const p=photos[curIdx];

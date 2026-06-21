@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>作品详情 · 光影星河</title>
+<style>
+  :root { --bg:#020210; --text:#d0cce8; --text-dim:#7060a0; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bg);height:100dvh;width:100vw;overflow:hidden;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+    touch-action:pan-x;user-select:none;-webkit-user-select:none;
+    display:flex;flex-direction:column;
+  }
+
+  /* Top bar */
+  .topbar{
+    position:fixed;top:0;left:0;right:0;z-index:10;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:max(12px,env(safe-area-inset-top,12px)) 16px;
+    background:linear-gradient(to bottom,rgba(2,2,16,0.95),rgba(2,2,16,0));
+    pointer-events:none;
+  }
+  .topbar>*{pointer-events:all}
+  .btn-back{
+    width:36px;height:36px;border:1px solid rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.04);color:#fff;font-size:18px;
+    border-radius:50%;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;transition:background 0.2s;text-decoration:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn-back:active{background:rgba(255,255,255,0.15)}
+  .counter{font-size:12px;color:var(--text-dim);letter-spacing:3px}
+
+  /* Main image */
+  .img-wrap{
+    flex:1;display:flex;align-items:center;justify-content:center;
+    padding:60px 4px 20px;
+    position:relative;
+  }
+  .img-wrap img{
+    max-width:98vw;max-height:82dvh;object-fit:contain;
+    border-radius:4px;box-shadow:0 8px 60px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04);
+    opacity:0;transition:opacity 0.3s ease;
+    user-select:none;-webkit-user-drag:none;
+  }
+  .img-wrap img.loaded{opacity:1}
+
+  /* Nav buttons */
+  .nav-btn{
+    position:fixed;top:50%;transform:translateY(-50%);z-index:10;
+    width:38px;height:38px;border:1px solid rgba(255,255,255,0.1);
+    background:rgba(0,0,0,0.5);color:#fff;font-size:16px;
+    border-radius:50%;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;transition:background 0.2s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .nav-btn:active{background:rgba(255,255,255,0.15)}
+  .nav-prev{left:8px}.nav-next{right:8px}
+
+  /* Bottom info */
+  .infobar{
+    position:fixed;bottom:max(16px,env(safe-area-inset-bottom,16px));
+    left:50%;transform:translateX(-50%);z-index:10;
+    display:flex;gap:20px;font-size:11px;color:var(--text-dim);
+    letter-spacing:1px;white-space:nowrap;
+    background:rgba(2,2,16,0.7);padding:10px 20px;border-radius:20px;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .infobar span{display:flex;align-items:center;gap:3px}
+
+  /* Loading */
+  .spinner{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    pointer-events:none;
+  }
+  .spinner-ring{
+    width:36px;height:36px;border:2px solid rgba(255,255,255,0.1);
+    border-top-color:#ff9922;border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Zoom hint */
+  .zoom-hint{
+    position:fixed;bottom:50%;left:50%;transform:translate(-50%,50%);
+    font-size:11px;color:var(--text-dim);letter-spacing:2px;
+    pointer-events:none;opacity:0;transition:opacity 0.4s;
+  }
+
+  @media(max-width:600px){
+    .nav-btn{width:32px;height:32px;font-size:14px}
+    .nav-prev{left:3px}.nav-next{right:3px}
+    .infobar{gap:10px;font-size:10px;padding:8px 16px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="btn-back" href="index.html">&larr;</a>
+  <span class="counter" id="counter"></span>
+  <span style="width:36px"></span>
+</div>
+
+<button class="nav-btn nav-prev" id="btnPrev">&#10094;</button>
+<button class="nav-btn nav-next" id="btnNext">&#10095;</button>
+
+<div class="img-wrap">
+  <div class="spinner" id="spinner"><div class="spinner-ring"></div></div>
+  <img id="mainImg" src="" alt="">
+</div>
+
+<div class="infobar" id="infobar">
+  <span>📍 <span id="infoLoc"></span></span>
+  <span>📅 <span id="infoDate"></span></span>
+  <span>📷 <span id="infoCam"></span></span>
+</div>
+
+<script>
+// Photo data — mirrors index.html
+const photoFiles = [
+  'photo/2423801B77ACB5E507D1255CABB4C0BC.jpg',
+  'photo/_DSC0028.jpg','photo/_DSC0043.jpg','photo/_DSC0104.jpg',
+  'photo/_DSC0135.jpg','photo/_DSC0243.jpg','photo/_DSC0375.jpg',
+  'photo/_DSC0379.jpg','photo/_DSC0388.jpg','photo/_DSC0397.jpg',
+  'photo/_DSC0406.jpg','photo/_DSC0409.jpg','photo/_DSC0412.jpg',
+  'photo/_DSC0417.jpg','photo/_DSC0418.jpg','photo/_DSC0423.jpg',
+  'photo/_DSC0431.jpg','photo/_DSC0439.jpg','photo/_DSC0443.jpg',
+  'photo/_DSC0447.jpg','photo/_DSC0458.jpg','photo/_DSC0474.jpg',
+  'photo/_DSC0475.jpg','photo/_DSC0477.jpg','photo/_DSC0482.jpg',
+  'photo/_DSC0486.jpg','photo/_DSC0488.jpg','photo/_DSC0504.jpg',
+  'photo/_DSC0509.jpg','photo/_DSC0514.jpg','photo/_DSC0522.jpg',
+  'photo/_DSC0549.jpg','photo/_DSC0553.jpg','photo/_DSC0568.jpg',
+  'photo/_DSC0582.jpg','photo/_DSC0585.jpg','photo/_DSC0588.jpg',
+  'photo/_DSC0683.jpg','photo/_DSC0695.jpg','photo/_DSC0715.jpg',
+  'photo/_DSC0717.jpg','photo/_DSC0786.jpg','photo/_DSC0897.jpg',
+  'photo/_DSC0944.jpg','photo/_DSC1006.jpg','photo/_DSC1027.jpg',
+  'photo/_DSC1028.jpg','photo/_DSC1353.jpg','photo/_DSC1379.jpg',
+  'photo/_DSC1420.jpg','photo/_DSC1424.jpg','photo/_DSC1441.jpg',
+  'photo/_DSC1461.jpg','photo/_DSC1599.jpg','photo/_DSC1690.jpg',
+  'photo/_DSC1762.jpg','photo/_DSC1782.jpg','photo/_DSC1796.jpg',
+  'photo/_DSC1855.jpg','photo/_DSC1867.jpg','photo/_DSC1955.jpg',
+  'photo/_DSC1965.jpg','photo/_DSC1986.jpg','photo/_DSC1988.jpg',
+  'photo/_DSC1989.jpg','photo/_DSC2057.jpg','photo/_DSC2075.jpg',
+  'photo/_DSC2103.jpg','photo/_DSC2172.jpg',
+];
+const TOTAL = photoFiles.length;
+
+// Parse index from URL
+const params = new URLSearchParams(window.location.search);
+let curIdx = parseInt(params.get('index')) || 0;
+if (curIdx < 0) curIdx = 0;
+if (curIdx >= TOTAL) curIdx = TOTAL - 1;
+
+const mainImg = document.getElementById('mainImg');
+const counter = document.getElementById('counter');
+const spinner = document.getElementById('spinner');
+const infoLoc = document.getElementById('infoLoc');
+const infoDate = document.getElementById('infoDate');
+const infoCam = document.getElementById('infoCam');
+
+function showPhoto(idx) {
+  curIdx = idx;
+  mainImg.classList.remove('loaded');
+  spinner.style.display = 'flex';
+  counter.textContent = (idx + 1) + ' / ' + TOTAL;
+  infoLoc.textContent = '';
+  infoDate.textContent = '2025';
+  infoCam.textContent = '';
+
+  const src = photoFiles[idx];
+  mainImg.src = src;
+  mainImg.onload = function() {
+    mainImg.classList.add('loaded');
+    spinner.style.display = 'none';
+  };
+  mainImg.onerror = function() {
+    spinner.style.display = 'none';
+  };
+}
+
+function nav(dir) {
+  let next = curIdx + dir;
+  if (next < 0) next = TOTAL - 1;
+  if (next >= TOTAL) next = 0;
+  showPhoto(next);
+}
+
+// Button nav
+document.getElementById('btnPrev').addEventListener('click', function(e) {
+  e.stopPropagation(); nav(-1);
+});
+document.getElementById('btnNext').addEventListener('click', function(e) {
+  e.stopPropagation(); nav(1);
+});
+
+// Keyboard
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') window.location.href = 'index.html';
+  if (e.key === 'ArrowLeft') nav(-1);
+  if (e.key === 'ArrowRight') nav(1);
+});
+
+// Swipe nav
+let touchX = 0;
+document.addEventListener('touchstart', function(e) {
+  touchX = e.touches[0].clientX;
+}, { passive: true });
+document.addEventListener('touchend', function(e) {
+  var dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) {
+    nav(dx > 0 ? -1 : 1);
+  }
+});
+
+// Back via browser history
+window.addEventListener('popstate', function() {
+  window.location.href = 'index.html';
+});
+
+// Load initial photo
+showPhoto(curIdx);
+</script>
+</body>
+</html>
