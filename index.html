@@ -152,8 +152,6 @@
 </style>
 </head>
 <body>
-<div id="__debug" style="position:fixed;top:80px;left:10px;z-index:999;color:#0f0;font-size:11px;font-family:monospace;pointer-events:none;background:rgba(0,0,0,0.8);padding:6px;border-radius:4px;max-width:90vw;word-break:break-all"></div>
-
 <div class="loading" id="loading">
   <div class="loading-ring"></div>
   <p class="loading-text" id="loadingText">星 河 加 载 中...</p>
@@ -277,9 +275,7 @@ THREE.SimpleControls = function(camera, domElement) {
 </script>
 <script>
 
-var __d=document.getElementById("__debug");
-function _log(m){if(__d)__d.textContent+=m+"\n";console.log(m);}
-_log("1. HTML parsed");
+console.log("1. HTML parsed");
 // THREE loaded via global
 // OrbitControls loaded via global
 
@@ -509,7 +505,7 @@ function createNebulaTexture(innerColor, outerColor, size=512) {
 //  SCENE SETUP
 // ═══════════════════════════════════════════════
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x020210);_log("2. Scene created");
+scene.background = new THREE.Color(0x020210);console.log("2. Scene created");
 scene.fog = new THREE.FogExp2(0x020210, 0.000035);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.5, 80);
@@ -523,7 +519,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.1;
-document.body.appendChild(renderer.domElement);_log("3. Renderer ready");
+document.body.appendChild(renderer.domElement);console.log("3. Renderer ready");
 
 // Lighting
 scene.add(new THREE.AmbientLight(0x181830, 0.8));
@@ -1077,7 +1073,7 @@ function loadTextures(){
           loadedCount++;
           batchDone++;
           updateLoad(bar);
-          if (loadedCount===TOTAL){_log('7. All textures loaded!');hideLoading();}
+          if (loadedCount===TOTAL){console.log('7. All textures loaded!');hideLoading();}
           if (batchDone===batchTotal) loadNextBatch();
         },
         undefined,
@@ -1085,7 +1081,7 @@ function loadTextures(){
           loadedCount++;
           batchDone++;
           updateLoad(bar);
-          if (loadedCount===TOTAL){_log('7. All textures loaded!');hideLoading();}
+          if (loadedCount===TOTAL){console.log('7. All textures loaded!');hideLoading();}
           if (batchDone===batchTotal) loadNextBatch();
         }
       );
@@ -1221,7 +1217,7 @@ window.addEventListener('orientationchange',()=>{
 // ═══════════════════════════════════════════════
 //  START
 // ═══════════════════════════════════════════════
-_log("5. Starting texture load...");loadTextures();_log("6. Animation loop started");animate();
+console.log("5. Starting texture load...");loadTextures();console.log("6. Animation loop started");animate();
 console.log('☀️ 光影星河已就绪 — %c太阳系摄影展%c','color:#ffbb44;font-size:16px;','');
 console.log(`   ${TOTAL} 张作品围绕太阳运行 · ${STAR_COUNT} 颗恒星 · ${orbitDefs.length} 条轨道`);
 
